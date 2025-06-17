@@ -1,14 +1,14 @@
 {
-  "name": "skillsync",
+  "name": "littlepolyglot",
   "version": "1.0.0",
   "description": "It's a final year project. Including Node.js, Express.js, MongoDB , Redis.io, AI Api's like Gemini.",
-  "homepage": "https://github.com/Bilal-CodeMaster/SkillSync#readme",
+  "homepage": "https://github.com/Bilal-CodeMaster/LittlePolyglot#readme",
   "bugs": {
-    "url": "https://github.com/Bilal-CodeMaster/SkillSync/issues"
+    "url": "https://github.com/Bilal-CodeMaster/LittlePolyglot/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Bilal-CodeMaster/SkillSync.git"
+    "url": "git+https://github.com/Bilal-CodeMaster/LittlePolyglot.git"
   },
   "license": "ISC",
   "author": "",
