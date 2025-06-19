@@ -23,9 +23,11 @@ const fileFilter = (req, file, cb) => {
   const allowedTypes = [
     "image/jpeg",
     "image/png",
+    "video/mp4",
     "application/pdf",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ];
+
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -36,8 +38,11 @@ const fileFilter = (req, file, cb) => {
 // Multer instance
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 100 * 1024 * 1024*1024 }, // 1000MB
   fileFilter,
 });
-
 export default upload;
+export const uploadMultiple = upload.fields([
+  { name: "imagesGallery", maxCount: 10 },
+  { name: "videosGallery", maxCount: 5 },
+]);

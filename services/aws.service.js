@@ -5,7 +5,7 @@ import {
 } from "@aws-sdk/client-s3";
 import fs from "fs";
 import dotenv from "dotenv";
-
+import path from "path";
 dotenv.config();
 
 const s3 = new S3Client({
@@ -18,7 +18,8 @@ const s3 = new S3Client({
 
 export const uploadFileToS3 = async (filePath, key, mimetype) => {
   try {
-    const fileBuffer = fs.readFileSync(filePath);
+    const resolvedPath = path.resolve(filePath);
+    const fileBuffer = fs.readFileSync(resolvedPath);
 
     const uploadParams = {
       Bucket: process.env.AWS_BUCKET_NAME,
@@ -29,24 +30,22 @@ export const uploadFileToS3 = async (filePath, key, mimetype) => {
 
     const command = new PutObjectCommand(uploadParams);
     await s3.send(command);
-    console.log(`File uploaded successfully at ${key}`);
+    console.log(`✅ Uploaded to S3: ${key}`);
 
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log(`Deleted: ${filePath}`);
-    } else {
-      console.log(`File not found: ${filePath}`);
+    // Only delete AFTER upload succeeds
+    if (fs.existsSync(resolvedPath)) {
+      fs.unlinkSync(resolvedPath);
+      console.log(`🗑️ Deleted local file: ${resolvedPath}`);
     }
 
-    return `https://s3.${process.env.AWS_REGION}.amazonaws.com/${
-      process.env.AWS_BUCKET_NAME
-    }/${key.replaceAll(" ", "&")}`;
+    return `https://${process.env.AWS_BUCKET_NAME}.s3.${
+      process.env.AWS_REGION
+    }.amazonaws.com/${encodeURIComponent(key)}`;
   } catch (error) {
-    console.error("Error uploading to S3:", error);
+    console.error("❌ Error uploading to S3:", error);
     throw error;
   }
 };
-
 export const deleteFileFromS3 = async (key) => {
   try {
     const deleteParams = {
