@@ -87,7 +87,11 @@ const signinController = async (req, res) => {
     }
     const accessToken = await existedUser.generateAccessToken();
     existedUser.isLoggedIn = true;
+  
     const loggedInUser = await existedUser.save();
+    // Exclude password and otp fields from the response
+    loggedInUser.password = undefined;
+    loggedInUser.otp = undefined;
     if (!accessToken) {
       return helper(res, {
         type: "bad",

@@ -265,9 +265,7 @@ export const deleteSchoolBranch = async (req, res) => {
     });
   }
 };
-// Add to top of file
 
-// Insert this new controller function below your existing ones
 export const deleteMediaFromBranch = async (req, res) => {
   try {
     const { id, mediaType, mediaId } = req.params;
