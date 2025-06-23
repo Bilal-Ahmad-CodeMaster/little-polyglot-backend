@@ -4,9 +4,9 @@ const PackageSchema = new mongoose.Schema({
   description: { type: String, required: true },
   duration: { type: String, required: true },
   durationInMinutes: { type: String, required: true },
-  totalClasses: { type: Number, required: true },
-  pricePerMonth: { type: Number, required: true },
-  materialsFee: { type: Number, required: true },
+  totalClasses: { type: String, required: true },
+  pricePerMonth: { type: String, required: true },
+  materialsFee: { type: String, required: true },
 });
 
 const GroupSchema = new mongoose.Schema({
@@ -16,40 +16,72 @@ const GroupSchema = new mongoose.Schema({
 
 const schoolBranchSchema = mongoose.Schema(
   {
-    name: {
+    region: {
       type: String,
       required: true,
     },
-    location: {
+    city: {
       type: String,
       required: true,
     },
+    annotation: {
+      type: String,
+      required: false,
+    },
+    schoolName: {
+      type: String,
+      required: true,
+    },
+
+    contactInfo: {
+      headmaster: {
+        email: { type: String, required: true },
+        location: { type: String, required: true },
+        phone: { type: String, required: true },
+      },
+      headquarter: {
+        email: { type: String, required: true },
+        location: { type: String, required: true },
+        phone: { type: String, required: true },
+      },
+    },
+
     googleLocation: {
       type: String,
       required: true,
     },
+
     priceList: [
       {
         groups: [GroupSchema],
       },
     ],
-    branchContactDetails: {
-      branchName: { type: String, required: true },
-      phone: { type: String, required: true },
-      branchLocation: { type: String, required: true },
-      googleLocation: { type: String, required: true },
-      email: { type: String, required: true },
-      address: { type: String, required: true },
-    },
+    videosGallery: [
+      {
+        title: { type: String, required: true },
+        videoUrl: { type: String, required: true },
+      },
+    ],
+    imagesGallery: [
+      {
+        title: { type: String, required: true },
+        imageUrl: { type: String, required: true },
+      },
+    ],
+    imageGalleryAboutUsDescription: { type: String, required: true },
+
+    extraInfoModal: [
+      {
+        type: String,
+        required: false,
+      },
+    ],
+
     schoolDetail: {
-      title: { type: String, required: true },
+      titleToShowBranchFor: { type: String, required: true },
+      branchName: { type: String, required: true },
       description: { type: String, required: true },
       extraDescription: { type: String, required: true },
-      googleLocation: { type: String, required: true },
-      email: { type: String, required: true },
-      address: { type: String, required: true },
-      contactNo: { type: String, required: true },
-      headquarterLocation: { type: String, required: true },
     },
     BranchEvents: [
       {
@@ -62,22 +94,15 @@ const schoolBranchSchema = mongoose.Schema(
     franchiseDetails: {
       name: { type: String, required: true },
       Address: { type: String, required: true },
-      TaxIdentificationNumber: { type: Number, required: true },
-      REGONNumber: { type: Number, required: true },
-      KRSNo: { type: Number, required: true },
-   
+      TaxIdentificationString: { type: String, required: true },
+      REGONString: { type: String, required: true },
+      KRSNo: { type: String, required: true },
     },
-
-    videosGallery: [
+    SEOBaseAdditionalInfo: [
       {
         title: { type: String, required: true },
-        videoUrl: { type: String, required: true },
-      },
-    ],
-    imagesGallery: [
-      {
-        title: { type: String, required: true },
-        imageUrl: { type: String, required: true },
+        subTittle: { type: String, required: true },
+        description: { type: String, required: true },
       },
     ],
   },
