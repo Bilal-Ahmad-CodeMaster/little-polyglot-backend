@@ -75,7 +75,7 @@ export const updateBlog = async (req, res) => {
       if (blog.image) {
         const urlParts = blog.image.split("/");
         const url = urlParts.slice(3).join("/"); // Removes "https://s3.region.amazonaws.com/bucket-name/"
-        const key = url.replace("%2F", "/");// Extract S3 key
+        const key = url.replace("%2F", "/"); // Extract S3 key
         console.log(key);
 
         await deleteFileFromS3(key);
@@ -119,7 +119,7 @@ export const deleteBlog = async (req, res) => {
     if (blog.image) {
       const urlParts = blog.image.split("/");
       const url = urlParts.slice(3).join("/"); // Removes "https://s3.region.amazonaws.com/bucket-name/"
-      const key= url.replace("%2F","/")
+      const key = url.replace("%2F", "/");
       console.log(key);
 
       await deleteFileFromS3(key);
@@ -131,5 +131,54 @@ export const deleteBlog = async (req, res) => {
   } catch (error) {
     console.error("Delete Error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const likeDislikeBlog = async (req, res) => {
+  console.log("hh");
+  try {
+    const { id } = req.params;
+    const { action } = req.body; // expects 'like' or 'dislike'
+    const userId = req.user && req.user.id; // assumes user info is in req.user
+
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required." });
+    }
+
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    // Ensure blog.likes is an array of userIds
+    if (!Array.isArray(blog.likes)) {
+      blog.likes = [];
+    }
+
+    if (action === "like") {
+      if (blog.likes.includes(userId)) {
+        return res
+          .status(400)
+          .json({ message: "You have already liked this blog." });
+      }
+      blog.likes.push(userId);
+    } else if (action === "dislike") {
+      if (!blog.likes.includes(userId)) {
+        return res
+          .status(400)
+          .json({ message: "You have not liked this blog yet." });
+      }  
+      blog.likes = blog.likes.filter((uid) => uid.toString() !== userId.toString());
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Invalid action. Use 'like' or 'dislike'." });
+    }
+
+    await blog.save();
+
+    res.status(200).json({ message: `Blog ${action}d`, data: blog });
+  } catch (error) {
+    res.status(500).json({ message: "Server error ", error: error.message });
   }
 };
