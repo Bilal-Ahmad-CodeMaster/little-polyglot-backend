@@ -2,7 +2,7 @@
 import SchoolBranch from "../models/schoolsBranches.model.js";
 import setResponse from "../services/helper.service.js";
 import mongoose from "mongoose";
-import { uploadFileToS3,deleteFileFromS3 } from "../services/aws.service.js";
+import { uploadFileToS3, deleteFileFromS3 } from "../services/aws.service.js";
 import path from "path";
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -10,23 +10,30 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 export const createSchoolBranch = async (req, res) => {
   try {
     const {
-      name,
-      location,
+      region,
+      city,
+      annotation,
+      schoolName,
       googleLocation,
       priceList,
-      branchContactDetails,
+      contactInfo,
       schoolDetail,
       BranchEvents,
       franchiseDetails,
+      SEOBaseAdditionalInfo,
+      extraInfoModal,
+      imageGalleryAboutUsDescription,
     } = req.body;
 
     if (
-      !name ||
-      !location ||
+      !region ||
+      !city ||
+      !schoolName ||
       !googleLocation ||
-      !branchContactDetails ||
+      !contactInfo ||
       !schoolDetail ||
-      !franchiseDetails
+      !franchiseDetails ||
+      !imageGalleryAboutUsDescription
     ) {
       return setResponse(res, {
         type: "bad",
@@ -57,16 +64,20 @@ export const createSchoolBranch = async (req, res) => {
       }
     }
 
-    console.log(req.files);
     const newBranch = await SchoolBranch.create({
-      name,
-      location,
+      region,
+      city,
+      annotation,
+      schoolName,
       googleLocation,
-      priceList: JSON.parse(priceList),
-      branchContactDetails: JSON.parse(branchContactDetails),
-      schoolDetail: JSON.parse(schoolDetail),
-      BranchEvents: JSON.parse(BranchEvents || "[]"),
-      franchiseDetails: JSON.parse(franchiseDetails),
+      contactInfo,
+      priceList,
+      schoolDetail,
+      BranchEvents,
+      franchiseDetails,
+      SEOBaseAdditionalInfo,
+      extraInfoModal,
+      imageGalleryAboutUsDescription,
       videosGallery,
       imagesGallery,
     });
@@ -154,24 +165,6 @@ export const updateSchoolBranch = async (req, res) => {
       });
     }
 
-    // Parse form-data JSON fields safely
-    const parsedPriceList = req.body.priceList
-      ? JSON.parse(req.body.priceList)
-      : existingBranch.priceList;
-    const parsedBranchContactDetails = req.body.branchContactDetails
-      ? JSON.parse(req.body.branchContactDetails)
-      : existingBranch.branchContactDetails;
-    const parsedSchoolDetail = req.body.schoolDetail
-      ? JSON.parse(req.body.schoolDetail)
-      : existingBranch.schoolDetail;
-    const parsedBranchEvents = req.body.BranchEvents
-      ? JSON.parse(req.body.BranchEvents)
-      : existingBranch.BranchEvents;
-    const parsedFranchiseDetails = req.body.franchiseDetails
-      ? JSON.parse(req.body.franchiseDetails)
-      : existingBranch.franchiseDetails;
-
-    // Merge new images/videos with existing
     let updatedVideos = [...(existingBranch.videosGallery || [])];
     let updatedImages = [...(existingBranch.imagesGallery || [])];
 
@@ -201,16 +194,24 @@ export const updateSchoolBranch = async (req, res) => {
       }
     }
 
-    // Build update payload dynamically
     const updatedData = {
-      name: req.body.name || existingBranch.name,
-      location: req.body.location || existingBranch.location,
+      region: req.body.region || existingBranch.region,
+      city: req.body.city || existingBranch.city,
+      annotation: req.body.annotation || existingBranch.annotation,
+      schoolName: req.body.schoolName || existingBranch.schoolName,
       googleLocation: req.body.googleLocation || existingBranch.googleLocation,
-      priceList: parsedPriceList,
-      branchContactDetails: parsedBranchContactDetails,
-      schoolDetail: parsedSchoolDetail,
-      BranchEvents: parsedBranchEvents,
-      franchiseDetails: parsedFranchiseDetails,
+      imageGalleryAboutUsDescription:
+        req.body.imageGalleryAboutUsDescription ||
+        existingBranch.imageGalleryAboutUsDescription,
+      contactInfo: req.body.contactInfo || existingBranch.contactInfo,
+      priceList: req.body.priceList || existingBranch.priceList,
+      schoolDetail: req.body.schoolDetail || existingBranch.schoolDetail,
+      BranchEvents: req.body.BranchEvents || existingBranch.BranchEvents,
+      franchiseDetails:
+        req.body.franchiseDetails || existingBranch.franchiseDetails,
+      SEOBaseAdditionalInfo:
+        req.body.SEOBaseAdditionalInfo || existingBranch.SEOBaseAdditionalInfo,
+      extraInfoModal: req.body.extraInfoModal || existingBranch.extraInfoModal,
       videosGallery: updatedVideos,
       imagesGallery: updatedImages,
     };
@@ -234,6 +235,7 @@ export const updateSchoolBranch = async (req, res) => {
     });
   }
 };
+
 // DELETE
 export const deleteSchoolBranch = async (req, res) => {
   try {
@@ -271,23 +273,36 @@ export const deleteMediaFromBranch = async (req, res) => {
     const { id, mediaType, mediaId } = req.params;
 
     if (!isValidObjectId(id) || !isValidObjectId(mediaId)) {
-      return setResponse(res, { type: "bad", message: "Invalid IDs provided." });
+      return setResponse(res, {
+        type: "bad",
+        message: "Invalid IDs provided.",
+      });
     }
 
     if (!["images", "videos"].includes(mediaType)) {
-      return setResponse(res, { type: "bad", message: "mediaType must be 'images' or 'videos'." });
+      return setResponse(res, {
+        type: "bad",
+        message: "mediaType must be 'images' or 'videos'.",
+      });
     }
 
     const branch = await SchoolBranch.findById(id);
     if (!branch) {
-      return setResponse(res, { type: "notFound", message: "School branch not found." });
+      return setResponse(res, {
+        type: "notFound",
+        message: "School branch not found.",
+      });
     }
 
-    const galleryField = mediaType === "images" ? "imagesGallery" : "videosGallery";
+    const galleryField =
+      mediaType === "images" ? "imagesGallery" : "videosGallery";
     const mediaArray = branch[galleryField] || [];
-    const idx = mediaArray.findIndex(m => m._id.equals(mediaId));
+    const idx = mediaArray.findIndex((m) => m._id.equals(mediaId));
     if (idx === -1) {
-      return setResponse(res, { type: "notFound", message: `${mediaType.slice(0, -1)} not found.` });
+      return setResponse(res, {
+        type: "notFound",
+        message: `${mediaType.slice(0, -1)} not found.`,
+      });
     }
 
     const [removed] = mediaArray.splice(idx, 1);
@@ -296,20 +311,27 @@ export const deleteMediaFromBranch = async (req, res) => {
 
     // Clean up from S3
     try {
-
       const url = mediaType === "images" ? removed.imageUrl : removed.videoUrl;
       console.log(url);
       // Extract the key from the S3 URL
       const s3BaseUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/`;
-      let key = url.startsWith(s3BaseUrl) ? url.substring(s3BaseUrl.length) : url.split('.amazonaws.com/')[1];
+      let key = url.startsWith(s3BaseUrl)
+        ? url.substring(s3BaseUrl.length)
+        : url.split(".amazonaws.com/")[1];
       key = decodeURIComponent(key);
       console.log(key);
       await deleteFileFromS3(key);
     } catch (s3err) {
-      console.warn("Media removed from DB but failed to delete from S3:", s3err.message);
+      console.warn(
+        "Media removed from DB but failed to delete from S3:",
+        s3err.message
+      );
     }
 
-    return setResponse(res, { type: "success", message: `${mediaType.slice(0, -1)} deleted successfully.` });
+    return setResponse(res, {
+      type: "success",
+      message: `${mediaType.slice(0, -1)} deleted successfully.`,
+    });
   } catch (err) {
     console.error("deleteMediaFromBranch error:", err);
     return setResponse(res, { type: "error", message: err.message });

@@ -94,9 +94,9 @@ const schoolBranchSchema = mongoose.Schema(
     franchiseDetails: {
       name: { type: String, required: true },
       Address: { type: String, required: true },
-      TaxIdentificationString: { type: String, required: true },
-      REGONString: { type: String, required: true },
-      KRSNo: { type: String, required: true },
+      TaxIdentification: { type: Number, required: true },
+      REGON: { type: Number, required: true },
+      KRSNo: { type: Number, required: true },
     },
     SEOBaseAdditionalInfo: [
       {
