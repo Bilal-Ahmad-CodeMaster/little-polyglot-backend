@@ -9,16 +9,15 @@ import {
   deleteMediaFromBranch,
 } from "../controller/schoolBranche.controller.js";
 const router = Router();
-import upload from "../services/multer.service.js";
-import { uploadMultiple } from "../services/multer.service.js";
 
-router.post("/", uploadMultiple, createSchoolBranch);
+import { uploadMultiple } from "../services/multer.service.js";
+import { JWTVerify } from "../middleware/auth.middleware.js";
+
+
+router.post("/", JWTVerify, uploadMultiple, createSchoolBranch);
 router.get("/", getAllSchoolBranches);
 router.get("/:id", getSchoolBranchById);
-router.patch("/:id", uploadMultiple, updateSchoolBranch);
-router.delete("/:id", deleteSchoolBranch);
-router.delete(
-  "/:id/:mediaType/:mediaId",
-  deleteMediaFromBranch
-);
+router.patch("/:id", JWTVerify, uploadMultiple, updateSchoolBranch);
+router.delete("/:id", JWTVerify, deleteSchoolBranch);
+router.delete("/:id/:mediaType/:mediaId", JWTVerify, deleteMediaFromBranch);
 export default router;

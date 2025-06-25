@@ -23,6 +23,7 @@ export const createSchoolBranch = async (req, res) => {
       SEOBaseAdditionalInfo,
       extraInfoModal,
       imageGalleryAboutUsDescription,
+      streetAddress,
     } = req.body;
 
     if (
@@ -65,6 +66,7 @@ export const createSchoolBranch = async (req, res) => {
     }
 
     const newBranch = await SchoolBranch.create({
+      streetAddress,
       region,
       city,
       annotation,
@@ -196,6 +198,7 @@ export const updateSchoolBranch = async (req, res) => {
 
     const updatedData = {
       region: req.body.region || existingBranch.region,
+      streetAddress: req.body.streetAddress || existingBranch.streetAddress,
       city: req.body.city || existingBranch.city,
       annotation: req.body.annotation || existingBranch.annotation,
       schoolName: req.body.schoolName || existingBranch.schoolName,

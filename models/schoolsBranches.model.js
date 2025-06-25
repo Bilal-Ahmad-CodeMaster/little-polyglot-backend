@@ -1,16 +1,16 @@
 import mongoose from "mongoose";
 const PackageSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  duration: { type: String, required: true },
-  durationInMinutes: { type: String, required: true },
-  totalClasses: { type: String, required: true },
-  pricePerMonth: { type: String, required: true },
-  materialsFee: { type: String, required: true },
+  title: { type: String},
+  description: { type: String},
+  duration: { type: String},
+  durationInMinutes: { type: String},
+  totalClasses: { type: String},
+  pricePerMonth: { type: String},
+  materialsFee: { type: String},
 });
 
 const GroupSchema = new mongoose.Schema({
-  label: { type: String, required: true },
+  label: { type: String},
   packages: [PackageSchema],
 });
 
@@ -18,11 +18,9 @@ const schoolBranchSchema = mongoose.Schema(
   {
     region: {
       type: String,
-      required: true,
     },
     city: {
       type: String,
-      required: true,
     },
     annotation: {
       type: String,
@@ -30,25 +28,23 @@ const schoolBranchSchema = mongoose.Schema(
     },
     schoolName: {
       type: String,
-      required: true,
     },
-
+    streetAddress: { type: String },
     contactInfo: {
       headmaster: {
-        email: { type: String, required: true },
-        location: { type: String, required: true },
-        phone: { type: String, required: true },
+        email: { type: String },
+        location: { type: String },
+        phone: { type: String },
       },
       headquarter: {
-        email: { type: String, required: true },
-        location: { type: String, required: true },
-        phone: { type: String, required: true },
+        email: { type: String },
+        location: { type: String },
+        phone: { type: String },
       },
     },
 
     googleLocation: {
       type: String,
-      required: true,
     },
 
     priceList: [
@@ -58,17 +54,17 @@ const schoolBranchSchema = mongoose.Schema(
     ],
     videosGallery: [
       {
-        title: { type: String, required: true },
-        videoUrl: { type: String, required: true },
+        title: { type: String },
+        videoUrl: { type: String },
       },
     ],
     imagesGallery: [
       {
-        title: { type: String, required: true },
-        imageUrl: { type: String, required: true },
+        title: { type: String },
+        imageUrl: { type: String },
       },
     ],
-    imageGalleryAboutUsDescription: { type: String, required: true },
+    imageGalleryAboutUsDescription: { type: String },
 
     extraInfoModal: [
       {
@@ -78,31 +74,31 @@ const schoolBranchSchema = mongoose.Schema(
     ],
 
     schoolDetail: {
-      titleToShowBranchFor: { type: String, required: true },
-      branchName: { type: String, required: true },
-      description: { type: String, required: true },
-      extraDescription: { type: String, required: true },
+      titleToShowBranchFor: { type: String },
+      branchName: { type: String },
+      description: { type: String },
+      extraDescription: { type: String },
     },
     BranchEvents: [
       {
-        title: { type: String, required: true },
-        description: { type: String, required: true },
-        date: { type: Date, required: true },
-        extraDescription: { type: String, required: true },
+        title: { type: String },
+        description: { type: String },
+        date: { type: Date },
+        extraDescription: { type: String },
       },
     ],
     franchiseDetails: {
-      name: { type: String, required: true },
-      Address: { type: String, required: true },
-      TaxIdentification: { type: Number, required: true },
-      REGON: { type: Number, required: true },
-      KRSNo: { type: Number, required: true },
+      name: { type: String },
+      Address: { type: String },
+      TaxIdentification: { type: Number },
+      REGON: { type: Number },
+      KRSNo: { type: Number },
     },
     SEOBaseAdditionalInfo: [
       {
-        title: { type: String, required: true },
-        subTittle: { type: String, required: true },
-        description: { type: String, required: true },
+        title: { type: String },
+        subTittle: { type: String },
+        description: { type: String },
       },
     ],
   },
