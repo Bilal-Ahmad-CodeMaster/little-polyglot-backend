@@ -6,9 +6,9 @@ import path from "path";
 // CREATE BLOG with image upload
 export const createBlog = async (req, res) => {
   try {
-    const { Title, category, description } = req.body;
+    const { title, category, description } = req.body;
 
-    if (!Title || !category || !description) {
+    if (!title || !category || !description) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
@@ -23,7 +23,7 @@ export const createBlog = async (req, res) => {
     }
 
     const newBlog = await Blog.create({
-      Title,
+      title,
       category,
       description,
       image: imageUrl,
@@ -66,7 +66,7 @@ export const updateBlog = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" });
     }
 
-    const { Title, category, description } = req.body;
+    const { title, category, description } = req.body;
 
     let updatedImage = blog.image;
 
@@ -91,7 +91,7 @@ export const updateBlog = async (req, res) => {
     }
 
     // 📝 Update blog fields
-    blog.Title = Title || blog.Title;
+    blog.title = title || blog.title;
     blog.category = category || blog.category;
     blog.description = description || blog.description;
     blog.image = updatedImage;

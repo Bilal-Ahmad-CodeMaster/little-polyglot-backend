@@ -6,7 +6,6 @@ import {
   getSchoolBranchById,
   updateSchoolBranch,
   deleteSchoolBranch,
-  deleteMediaFromBranch,
 } from "../controller/schoolBranche.controller.js";
 const router = Router();
 
@@ -19,5 +18,4 @@ router.get("/", getAllSchoolBranches);
 router.get("/:id", getSchoolBranchById);
 router.patch("/:id", JWTVerify, uploadMultiple, updateSchoolBranch);
 router.delete("/:id", JWTVerify, deleteSchoolBranch);
-router.delete("/:id/:mediaType/:mediaId", JWTVerify, deleteMediaFromBranch);
 export default router;
