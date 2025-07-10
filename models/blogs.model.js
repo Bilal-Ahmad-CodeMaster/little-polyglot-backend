@@ -7,6 +7,10 @@ const blogSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    subTitle: {
+      type: String,
+      trim: true,
+    },
     category: {
       type: String,
       enum: ["Wychowanie", "Kreatywna nauka", "Ciekawe miejsca"],
@@ -16,10 +20,16 @@ const blogSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    image: {
+    subDescription: {
       type: String,
       trim: true,
     },
+    imagesGallery: [
+      {
+        title: String,
+        imageUrl: String,
+      },
+    ],
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,

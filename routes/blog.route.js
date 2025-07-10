@@ -8,14 +8,15 @@ import {
   deleteBlog,
   likeDislikeBlog,
 } from "../controller/blog.controller.js";
-import upload from "../services/multer.service.js";
+
 import { JWTVerify } from "../middleware/auth.middleware.js";
+import { uploadMultiple } from "../services/multer.service.js";
 
 const router = express.Router();
 
-router.post("/",JWTVerify, upload.single("image"), createBlog);
+router.post("/",JWTVerify,uploadMultiple, createBlog);
 router.post("/likeDislike/:id",JWTVerify, likeDislikeBlog);
-router.put("/:id", JWTVerify, JWTVerify, upload.single("image"), updateBlog);
+router.put("/:id", JWTVerify, JWTVerify,uploadMultiple, updateBlog);
 
 router.get("/", getAllBlogs);
 router.get("/:id", getBlogById);
