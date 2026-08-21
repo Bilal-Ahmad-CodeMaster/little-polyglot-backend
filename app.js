@@ -11,7 +11,7 @@ const app = express();
 app.use(morgan("combined"));
 app.use(cors(process.env.CORS_ORIGIN));
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
