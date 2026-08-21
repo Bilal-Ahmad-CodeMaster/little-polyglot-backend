@@ -7,6 +7,11 @@ const PackageSchema = new mongoose.Schema({
   totalClasses: { type: String},
   pricePerMonth: { type: String},
   materialsFee: { type: String},
+  // Which language track this course/lecture covers.
+  language: {
+    type: String,
+    enum: ["american_english", "british_english", "polish"],
+  },
 });
 
 const GroupSchema = new mongoose.Schema({
