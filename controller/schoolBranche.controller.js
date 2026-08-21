@@ -4,7 +4,12 @@ import setResponse from "../services/helper.service.js";
 import mongoose from "mongoose";
 import { uploadFileToS3, deleteFileFromS3 } from "../services/aws.service.js";
 import path from "path";
+import { getCache, setCache, invalidateCache } from "../services/cache.service.js";
+
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+const CACHE_PREFIX = "school-branches";
+const LIST_CACHE_KEY = `${CACHE_PREFIX}:all`;
+const LIST_CACHE_TTL_MS = 60 * 1000;
 
 // CREATE with AWS S3 Upload Support
 export const createSchoolBranch = async (req, res) => {
@@ -64,19 +69,23 @@ export const createSchoolBranch = async (req, res) => {
 
     if (req.files) {
       if (req.files.videosGallery) {
-        for (const file of req.files.videosGallery) {
-          const key = `videos/${Date.now()}-${file.originalname}`;
-          const videoUrl = await uploadFileToS3(file.path, key, file.mimetype);
-          videosGallery.push({ title: file.originalname, videoUrl });
-        }
+        videosGallery = await Promise.all(
+          req.files.videosGallery.map(async (file) => {
+            const key = `videos/${Date.now()}-${file.originalname}`;
+            const videoUrl = await uploadFileToS3(file.path, key, file.mimetype);
+            return { title: file.originalname, videoUrl };
+          })
+        );
       }
 
       if (req.files.imagesGallery) {
-        for (const file of req.files.imagesGallery) {
-          const key = `images/${Date.now()}-${file.originalname}`;
-          const imageUrl = await uploadFileToS3(file.path, key, file.mimetype);
-          imagesGallery.push({ title: file.originalname, imageUrl });
-        }
+        imagesGallery = await Promise.all(
+          req.files.imagesGallery.map(async (file) => {
+            const key = `images/${Date.now()}-${file.originalname}`;
+            const imageUrl = await uploadFileToS3(file.path, key, file.mimetype);
+            return { title: file.originalname, imageUrl };
+          })
+        );
       }
     }
 
@@ -99,6 +108,8 @@ export const createSchoolBranch = async (req, res) => {
       imagesGallery,
     });
 
+    invalidateCache(CACHE_PREFIX);
+
     return setResponse(res, {
       type: "success",
       message: "School branch created successfully",
@@ -115,7 +126,19 @@ export const createSchoolBranch = async (req, res) => {
 // READ ALL
 export const getAllSchoolBranches = async (req, res) => {
   try {
-    const branches = await SchoolBranch.find();
+    const cached = getCache(LIST_CACHE_KEY);
+    if (cached) {
+      return setResponse(res, {
+        type: "success",
+        message: "School branches retrieved successfully",
+        data: cached,
+      });
+    }
+
+    // .lean() skips Mongoose document hydration — faster to query and serialize.
+    const branches = await SchoolBranch.find().lean();
+    setCache(LIST_CACHE_KEY, branches, LIST_CACHE_TTL_MS);
+
     return setResponse(res, {
       type: "success",
       message: "School branches retrieved successfully",
@@ -141,13 +164,25 @@ export const getSchoolBranchById = async (req, res) => {
       });
     }
 
-    const branch = await SchoolBranch.findById(id);
+    const cacheKey = `${CACHE_PREFIX}:${id}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return setResponse(res, {
+        type: "success",
+        message: "School branch retrieved successfully",
+        data: cached,
+      });
+    }
+
+    const branch = await SchoolBranch.findById(id).lean();
     if (!branch) {
       return setResponse(res, {
         type: "notFound",
         message: "School branch not found",
       });
     }
+
+    setCache(cacheKey, branch, LIST_CACHE_TTL_MS);
 
     return setResponse(res, {
       type: "success",
@@ -195,29 +230,24 @@ export const updateSchoolBranch = async (req, res) => {
     let updatedImages = [];
     let updatedVideos = [];
 
-    // 🧹 DELETE Removed Images from S3
+    // 🧹 DELETE Removed Images + Videos from S3 (in parallel)
     const removedImages = (existingBranch.imagesGallery || []).filter(
       (img) => !incomingImageUrls.includes(img.imageUrl)
     );
-    for (const img of removedImages) {
-      // Extract S3 key from the image URL
-      const s3Key = img.imageUrl.split(".amazonaws.com/")[1];
-      if (s3Key) {
-        const deleteKey = s3Key.replace("%2F", "/");
-
-        await deleteFileFromS3(deleteKey);
-      }
-    }
-
-    // 🧹 DELETE Removed Videos from S3
     const removedVideos = (existingBranch.videosGallery || []).filter(
       (vid) => !incomingVideoUrls.includes(vid.videoUrl)
     );
-    for (const vid of removedVideos) {
-      const s3Key = vid.videoUrl.split(".amazonaws.com/")[1];
-      const deleteKey = s3Key.replace("%2F", "/");
-      await deleteFileFromS3(deleteKey);
-    }
+
+    await Promise.all([
+      ...removedImages.map((img) => {
+        const s3Key = img.imageUrl.split(".amazonaws.com/")[1];
+        return s3Key ? deleteFileFromS3(s3Key.replace("%2F", "/")) : Promise.resolve();
+      }),
+      ...removedVideos.map((vid) => {
+        const s3Key = vid.videoUrl.split(".amazonaws.com/")[1];
+        return s3Key ? deleteFileFromS3(s3Key.replace("%2F", "/")) : Promise.resolve();
+      }),
+    ]);
 
     // ✅ Keep URLs user wants to retain
     updatedImages = incomingImageUrls.map((url) => ({
@@ -230,30 +260,36 @@ export const updateSchoolBranch = async (req, res) => {
       videoUrl: url,
     }));
 
-    // 🆕 Add new uploaded files to updated arrays
+    // 🆕 Add new uploaded files to updated arrays (in parallel)
     if (req.files) {
       if (req.files.imagesGallery) {
-        for (const file of req.files.imagesGallery) {
-          const key = `images/${Date.now()}-${file.originalname}`;
-          const imageUrl = await uploadFileToS3(
-            path.resolve(file.path),
-            key,
-            file.mimetype
-          );
-          updatedImages.push({ title: file.originalname, imageUrl });
-        }
+        const uploaded = await Promise.all(
+          req.files.imagesGallery.map(async (file) => {
+            const key = `images/${Date.now()}-${file.originalname}`;
+            const imageUrl = await uploadFileToS3(
+              path.resolve(file.path),
+              key,
+              file.mimetype
+            );
+            return { title: file.originalname, imageUrl };
+          })
+        );
+        updatedImages.push(...uploaded);
       }
 
       if (req.files.videosGallery) {
-        for (const file of req.files.videosGallery) {
-          const key = `videos/${Date.now()}-${file.originalname}`;
-          const videoUrl = await uploadFileToS3(
-            path.resolve(file.path),
-            key,
-            file.mimetype
-          );
-          updatedVideos.push({ title: file.originalname, videoUrl });
-        }
+        const uploaded = await Promise.all(
+          req.files.videosGallery.map(async (file) => {
+            const key = `videos/${Date.now()}-${file.originalname}`;
+            const videoUrl = await uploadFileToS3(
+              path.resolve(file.path),
+              key,
+              file.mimetype
+            );
+            return { title: file.originalname, videoUrl };
+          })
+        );
+        updatedVideos.push(...uploaded);
       }
     }
 
@@ -281,6 +317,8 @@ export const updateSchoolBranch = async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    invalidateCache(CACHE_PREFIX);
+
     return setResponse(res, {
       type: "success",
       message: "School branch updated successfully",
@@ -305,33 +343,30 @@ export const deleteSchoolBranch = async (req, res) => {
       return res.status(404).json({ message: "School branch not found" });
     }
 
-    // 🔥 Delete all images from S3
-    if (Array.isArray(branch.imagesGallery)) {
-      for (const img of branch.imagesGallery) {
-        if (img.imageUrl) {
-          const key = img.imageUrl.split(".amazonaws.com/")[1];
-          const deleteKey = key.replace("%2F", "/");
-          console.log("deleted key ", deleteKey);
+    // 🔥 Delete all images and videos from S3 (in parallel)
+    const imageDeletes = Array.isArray(branch.imagesGallery)
+      ? branch.imagesGallery
+          .filter((img) => img.imageUrl)
+          .map((img) => {
+            const key = img.imageUrl.split(".amazonaws.com/")[1];
+            return deleteFileFromS3(key.replace("%2F", "/"));
+          })
+      : [];
 
-          await deleteFileFromS3(deleteKey);
-        }
-      }
-    }
+    const videoDeletes = Array.isArray(branch.videosGallery)
+      ? branch.videosGallery
+          .filter((vid) => vid.videoUrl)
+          .map((vid) => {
+            const key = vid.videoUrl.split(".amazonaws.com/")[1];
+            return deleteFileFromS3(key.replace("%2F", "/"));
+          })
+      : [];
 
-    // 🔥 Delete all videos from S3
-    if (Array.isArray(branch.videosGallery)) {
-      for (const vid of branch.videosGallery) {
-        if (vid.videoUrl) {
-          const key = vid.videoUrl.split(".amazonaws.com/")[1];
-          const deleteKey = key.replace("%2F", "/");
-          console.log("deleted key ", deleteKey);
-          await deleteFileFromS3(deleteKey);
-        }
-      }
-    }
+    await Promise.all([...imageDeletes, ...videoDeletes]);
 
     // ❌ Delete the document from DB
     await branch.deleteOne();
+    invalidateCache(CACHE_PREFIX);
 
     return res
       .status(200)
