@@ -1,35 +1,29 @@
-// One-time migration: tags existing course packages that don't yet have a
-// `language` value with a default, so the site can start showing language
-// badges (English / Spanish / German) immediately.
+// One-time migration: remaps legacy package language codes to the new
+// English / Spanish / German set.
 //
-// All packages created before this feature existed are assumed to be "english".
-// You can re-tag any of them afterwards from the Admin Panel.
+// Mapping:
+//   american_english -> english
+//   british_english  -> english
+//   polish           -> spanish
 //
 // Usage (from the little-polyglot-backend folder, with your real .env in place):
-//   node scripts/backfill-package-language.js
-//
-// Optional: pass a different default, e.g.
-//   node scripts/backfill-package-language.js spanish
+//   node scripts/migrate-language-codes.js
 
 import "dotenv/config.js";
 import mongoose from "mongoose";
 import SchoolBranch from "../models/schoolsBranches.model.js";
 
-const VALID_LANGUAGES = ["english", "spanish", "german"];
-const defaultLanguage = process.argv[2] || "english";
-
-if (!VALID_LANGUAGES.includes(defaultLanguage)) {
-  console.error(
-    `Invalid language "${defaultLanguage}". Use one of: ${VALID_LANGUAGES.join(", ")}`
-  );
-  process.exit(1);
-}
+const LEGACY_TO_NEW = {
+  american_english: "english",
+  british_english: "english",
+  polish: "spanish",
+};
 
 async function run() {
   const uri = String(process.env.DB_URI) || "";
   const connectionString = `${uri}/${process.env.DB_NAME}`;
   await mongoose.connect(connectionString);
-  console.log("DB connected. Backfilling package language ->", defaultLanguage);
+  console.log("DB connected. Migrating legacy language codes...");
 
   const branches = await SchoolBranch.find({});
   let updatedBranches = 0;
@@ -40,8 +34,9 @@ async function run() {
     for (const priceItem of branch.priceList || []) {
       for (const group of priceItem.groups || []) {
         for (const pkg of group.packages || []) {
-          if (!pkg.language) {
-            pkg.language = defaultLanguage;
+          const mapped = LEGACY_TO_NEW[pkg.language];
+          if (mapped) {
+            pkg.language = mapped;
             touched = true;
             updatedPackages += 1;
           }
@@ -55,7 +50,7 @@ async function run() {
   }
 
   console.log(
-    `Done. Updated ${updatedPackages} package(s) across ${updatedBranches} branch(es).`
+    `Done. Remapped ${updatedPackages} package(s) across ${updatedBranches} branch(es).`
   );
   await mongoose.disconnect();
 }

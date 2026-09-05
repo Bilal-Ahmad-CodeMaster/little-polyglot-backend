@@ -10,7 +10,7 @@ const PackageSchema = new mongoose.Schema({
   // Which language track this course/lecture covers.
   language: {
     type: String,
-    enum: ["american_english", "british_english", "polish"],
+    enum: ["english", "spanish", "german"],
   },
 });
 
